@@ -2,21 +2,22 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 let isMobile = window.innerWidth < 768;
-canvas.width = 800;
-canvas.height = isMobile ? 200 : 300;
+let canvasWidth = isMobile ? window.innerWidth : 800;
+let canvasHeight = isMobile ? window.innerHeight * 0.5 : 300;
+canvas.width = canvasWidth;
+canvas.height = canvasHeight;
 
 // Set canvas dimensions based on device
 function resizeCanvas() {
     isMobile = window.innerWidth < 768;
     
-    if (window.innerWidth < 800) {
-        canvas.width = window.innerWidth - 20;
-    } else {
-        canvas.width = 800;
-    }
+    // Auto-adjust to screen size
+    canvasWidth = isMobile ? window.innerWidth - 20 : 800;
+    canvasHeight = isMobile ? window.innerHeight * 0.5 : 300;
     
-    canvas.height = isMobile ? 200 : 300;
-    groundLevel = isMobile ? 135 : 235; // Ground level based on device
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    groundLevel = isMobile ? canvasHeight - 65 : 235; // Adjust ground level based on canvas height
     
     // Update dino position
     if (dino) {
@@ -25,9 +26,11 @@ function resizeCanvas() {
 }
 
 // Call resize on load
-resizeCanvas();
+window.addEventListener('load', resizeCanvas);
 // Add resize listener
 window.addEventListener('resize', resizeCanvas);
+// Force an initial resize
+setTimeout(resizeCanvas, 100);
 
 // Game variables
 let score = 0;
@@ -37,7 +40,7 @@ let gameOver = false;
 let jumping = false;
 let obstacles = [];
 let frame = 0;
-let groundLevel = isMobile ? 135 : 235; // Ground level based on device
+let groundLevel = isMobile ? canvasHeight - 65 : 235; // Adjust ground level based on canvas height
 
 // Display high score
 document.getElementById('high-score').textContent = `HI: ${highScore}`;
@@ -210,16 +213,34 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
-// Touch controls for mobile
+// Touch controls for mobile - improved responsiveness
 document.addEventListener('touchstart', function(event) {
     event.preventDefault();
-    dino.jump();
     
-    // Restart game if game over
-    if (gameOver) {
-        resetGame();
+    // Only respond to touches on the canvas area
+    const touch = event.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    
+    if (touch.clientX >= rect.left && 
+        touch.clientX <= rect.right &&
+        touch.clientY >= rect.top && 
+        touch.clientY <= rect.bottom) {
+        
+        dino.jump();
+        
+        // Restart game if game over
+        if (gameOver) {
+            resetGame();
+        }
     }
-});
+}, { passive: false });
+
+// Prevent default on touchmove to avoid scrolling while playing
+document.addEventListener('touchmove', function(event) {
+    if (!gameOver) {
+        event.preventDefault();
+    }
+}, { passive: false });
 
 // Reset game
 function resetGame() {
