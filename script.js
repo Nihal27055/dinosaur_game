@@ -1,8 +1,33 @@
 // Game canvas setup
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
+let isMobile = window.innerWidth < 768;
 canvas.width = 800;
-canvas.height = 300;
+canvas.height = isMobile ? 200 : 300;
+
+// Set canvas dimensions based on device
+function resizeCanvas() {
+    isMobile = window.innerWidth < 768;
+    
+    if (window.innerWidth < 800) {
+        canvas.width = window.innerWidth - 20;
+    } else {
+        canvas.width = 800;
+    }
+    
+    canvas.height = isMobile ? 200 : 300;
+    groundLevel = isMobile ? 135 : 235; // Ground level based on device
+    
+    // Update dino position
+    if (dino) {
+        dino.y = groundLevel;
+    }
+}
+
+// Call resize on load
+resizeCanvas();
+// Add resize listener
+window.addEventListener('resize', resizeCanvas);
 
 // Game variables
 let score = 0;
@@ -12,6 +37,7 @@ let gameOver = false;
 let jumping = false;
 let obstacles = [];
 let frame = 0;
+let groundLevel = isMobile ? 135 : 235; // Ground level based on device
 
 // Display high score
 document.getElementById('high-score').textContent = `HI: ${highScore}`;
@@ -19,41 +45,48 @@ document.getElementById('high-score').textContent = `HI: ${highScore}`;
 // Dinosaur properties
 const dino = {
     x: 50,
-    y: 235,  // Adjusted to touch the floor
-    width: 50,
-    height: 65, // Made taller
+    y: groundLevel,  // Adjusted to touch the floor
+    width: isMobile ? 40 : 50,
+    height: isMobile ? 50 : 65,
     velocityY: 0,
     gravity: 0.6,  // Keep the same gravity
     jumpForce: -20,  // Increased jump force for higher jumps
     jumpHeight: 0,   // Track jump height
-    maxJumpHeight: 150, // Increased maximum jump height
+    maxJumpHeight: isMobile ? 100 : 150, // Adjusted maximum jump height
     draw() {
         ctx.fillStyle = '#535353';
         
+        // Scale dimensions for mobile
+        const scale = isMobile ? 0.8 : 1;
+        const bodyWidth = (this.width - 15) * scale;
+        const bodyHeight = (this.height - 25) * scale;
+        const headSize = (this.width - 20) * scale;
+        const headHeight = (this.height - 45) * scale;
+        
         // Draw body more like Chrome dino
-        ctx.fillRect(this.x, this.y, this.width - 15, this.height - 25);
+        ctx.fillRect(this.x, this.y, bodyWidth, bodyHeight);
         
         // Draw head - more T-Rex like
-        ctx.fillRect(this.x + 20, this.y - 15, this.width - 20, this.height - 45);
+        ctx.fillRect(this.x + 20 * scale, this.y - 15 * scale, headSize, headHeight);
         
         // Draw tail
-        ctx.fillRect(this.x - 15, this.y + 5, 20, 10);
+        ctx.fillRect(this.x - 15 * scale, this.y + 5 * scale, 20 * scale, 10 * scale);
         
         // Draw legs
         if (jumping && this.velocityY < 5) {
             // Draw legs in running position while jumping
-            ctx.fillRect(this.x + 5, this.y + 40, 8, 20);  // Front leg bent
-            ctx.fillRect(this.x + 25, this.y + 40, 8, 20);  // Back leg bent
+            ctx.fillRect(this.x + 5 * scale, this.y + 40 * scale, 8 * scale, 20 * scale);  // Front leg bent
+            ctx.fillRect(this.x + 25 * scale, this.y + 40 * scale, 8 * scale, 20 * scale);  // Back leg bent
         } else {
             // Normal legs when standing/landing
-            ctx.fillRect(this.x + 5, this.y + 40, 8, 25);  // Front leg
-            ctx.fillRect(this.x + 25, this.y + 40, 8, 25);  // Back leg
+            ctx.fillRect(this.x + 5 * scale, this.y + 40 * scale, 8 * scale, 25 * scale);  // Front leg
+            ctx.fillRect(this.x + 25 * scale, this.y + 40 * scale, 8 * scale, 25 * scale);  // Back leg
         }
         
         // Draw eye
         ctx.fillStyle = 'white';
         ctx.beginPath();
-        ctx.arc(this.x + 30, this.y - 5, 2, 0, Math.PI * 2);
+        ctx.arc(this.x + 30 * scale, this.y - 5 * scale, 2 * scale, 0, Math.PI * 2);
         ctx.fill();
     },
     jump() {
@@ -81,8 +114,8 @@ const dino = {
         }
         
         // Check if landed
-        if (this.y >= 235) {
-            this.y = 235;
+        if (this.y >= groundLevel) {
+            this.y = groundLevel;
             this.velocityY = 0;
             jumping = false;
             this.jumpHeight = 0;
@@ -93,14 +126,16 @@ const dino = {
 // Obstacle class
 class Obstacle {
     constructor() {
-        this.height = 60 + Math.random() * 40;  // Increased height - between 60-100 now
-        this.width = 35 + Math.random() * 25;   // Increased width - between 35-60 now
+        const heightMultiplier = isMobile ? 0.7 : 1;
+        this.height = (60 + Math.random() * 40) * heightMultiplier;  // Scaled for mobile
+        this.width = (35 + Math.random() * 25) * (isMobile ? 0.7 : 1);   // Scaled for mobile
         this.x = canvas.width;
         this.y = canvas.height - this.height;
         this.cactusType = Math.floor(Math.random() * 3); // 0, 1, or 2 for different types
     }
 
     draw() {
+        const scale = isMobile ? 0.7 : 1;
         ctx.fillStyle = '#2E8B57'; // Dark green for cacti
         
         if (this.cactusType === 0) {
@@ -123,7 +158,7 @@ class Obstacle {
         ctx.fillRect(x + width * 0.3, y, width * 0.4, height);
         
         // Cactus arms
-        if (height > 40) {
+        if (height > 40 * (isMobile ? 0.7 : 1)) {
             // Right arm
             ctx.fillRect(x + width * 0.7, y + height * 0.2, width * 0.3, width * 0.2);
             // Left arm
@@ -162,7 +197,7 @@ function checkCollision(dino, obstacle) {
     );
 }
 
-// Game controls
+// Game controls - keyboard
 document.addEventListener('keydown', function(event) {
     if (event.code === 'Space') {
         event.preventDefault();
@@ -172,6 +207,17 @@ document.addEventListener('keydown', function(event) {
         if (gameOver) {
             resetGame();
         }
+    }
+});
+
+// Touch controls for mobile
+document.addEventListener('touchstart', function(event) {
+    event.preventDefault();
+    dino.jump();
+    
+    // Restart game if game over
+    if (gameOver) {
+        resetGame();
     }
 });
 
@@ -191,7 +237,7 @@ function gameLoop() {
     
     // Draw clouds randomly
     if (frame % 100 === 0) {
-        drawCloud(Math.random() * canvas.width, 50 + Math.random() * 50);
+        drawCloud(Math.random() * canvas.width, 50 + Math.random() * (isMobile ? 30 : 50));
     }
     
     // Update and draw ground
