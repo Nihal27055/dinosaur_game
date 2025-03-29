@@ -2,6 +2,10 @@
 
 A clone of the famous Chrome offline dinosaur game that appears when you have no internet connection.
 
+## Live Demo
+
+Try the game here: [Dinosaur Game](https://nihal27055.github.io/dinosaur_game/)
+
 ## Features
 
 - Simple gameplay where a dinosaur jumps over obstacles
